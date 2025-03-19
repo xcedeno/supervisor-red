@@ -1,22 +1,24 @@
-import React from 'react';
+// src/components/Card.tsx
+import React, { memo } from 'react';
 import { Device } from '../types/types';
+import './Card.css'; // Importa el archivo CSS
 
 interface CardProps {
 device: Device;
 }
 
 const Card: React.FC<CardProps> = ({ device }) => {
+const status = device.status || 'offline'; // Asegura un valor predeterminado
+
 return (
 <div
-    className={`p-4 rounded-lg shadow-md text-center w-48 ${
-    device.status ? 'bg-green-500' : 'bg-red-500'
-    } text-white`}
+    className={`card ${status === 'online' ? 'online' : 'offline'}`}
 >
-    <h3 className="text-lg font-bold">{device.name}</h3>
-    <p className="text-sm">{device.ip}</p>
-    <p className="text-sm">{device.status ? 'Activo' : 'Inactivo'}</p>
+    <h3>{device.name}</h3>
+    <p>{device.ip}</p>
+    <p>{status === 'online' ? 'Activo' : 'Inactivo'}</p>
 </div>
 );
 };
 
-export default Card;
+export default memo(Card);

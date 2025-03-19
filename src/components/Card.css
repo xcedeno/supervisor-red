@@ -1,0 +1,28 @@
+/* src/components/Card.css */
+.card {
+padding: 1rem;
+border-radius: 0.5rem;
+box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+text-align: center;
+width: 12rem; /* Ajusta el ancho según sea necesario */
+color: white;
+}
+
+.card.online {
+background-color: #10b981; /* Verde claro */
+}
+
+.card.offline {
+background-color: #ef4444; /* Rojo claro */
+}
+
+.card h3 {
+font-size: 1.25rem;
+font-weight: bold;
+margin-bottom: 0.5rem;
+}
+
+.card p {
+font-size: 0.875rem;
+margin: 0.25rem 0;
+}

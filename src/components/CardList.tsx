@@ -1,18 +1,20 @@
-import React from 'react';
-import DeviceCard from './DeviceCard';
+// src/components/CardList.tsx
+import React, { memo } from 'react';
+import Card from './Card';
+import { Device } from '../types/types';
 
 interface CardListProps {
-devices: { id: string; name: string; ip: string }[];
+devices: Device[];
 }
 
 const CardList: React.FC<CardListProps> = ({ devices }) => {
 return (
-<div className="card-list">
+<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
     {devices.map((device) => (
-    <DeviceCard key={device.id} device={device} />
+    <Card key={device.id} device={device} />
     ))}
 </div>
 );
 };
 
-export default CardList;
+export default memo(CardList);

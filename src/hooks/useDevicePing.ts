@@ -10,7 +10,7 @@ const [lastNotificationTime, setLastNotificationTime] = useState<number>(0);
 useEffect(() => {
 const ping = async () => {
     try {
-    const response = await axios.get(`http://${device.ip}`, { timeout: 2000 });
+    const response = await axios.get(`http://${device.ip}`, { timeout: 4000 });
     const newStatus = response.status === 200;
 
     // Verificar si el estado ha cambiado
