@@ -1,7 +1,8 @@
 // src/components/CardList.tsx
 import React, { memo } from 'react';
-import Card from './Card';
+import DeviceCard from './DeviceCard';
 import { Device } from '../types/types';
+import './CardList.css'; // Importa el archivo CSS
 
 interface CardListProps {
 devices: Device[];
@@ -9,9 +10,9 @@ devices: Device[];
 
 const CardList: React.FC<CardListProps> = ({ devices }) => {
 return (
-<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+<div className="card-list">
     {devices.map((device) => (
-    <Card key={device.id} device={device} />
+    <DeviceCard key={device.id} device={device} />
     ))}
 </div>
 );

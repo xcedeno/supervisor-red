@@ -1,0 +1,29 @@
+/* src/components/CardList.css */
+
+.card-list {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* 5 columnas */
+    gap: 16px; /* Espacio entre las tarjetas */
+    justify-content: center;
+    align-items: start;
+    margin: 20px auto;
+    max-width: 1200px; /* Ancho máximo del contenedor */
+  }
+  
+  @media (max-width: 1200px) {
+    .card-list {
+      grid-template-columns: repeat(4, 1fr); /* 4 columnas en pantallas medianas */
+    }
+  }
+  
+  @media (max-width: 900px) {
+    .card-list {
+      grid-template-columns: repeat(3, 1fr); /* 3 columnas en pantallas pequeñas */
+    }
+  }
+  
+  @media (max-width: 600px) {
+    .card-list {
+      grid-template-columns: repeat(2, 1fr); /* 2 columnas en pantallas muy pequeñas */
+    }
+  }
