@@ -1,54 +1,33 @@
-import React, { useMemo } from 'react';
-import { Grid, Card, CardContent, Typography, useTheme } from '@mui/material';
+// src/components/Dashboard.tsx
+import React, { useContext, useMemo } from 'react';
+import { Grid, Card, CardContent, Typography } from '@mui/material';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import { Device } from '../types/types';
+import { DeviceContext } from '../context/DeviceContext';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-interface DashboardProps {
-devices: Device[];
-loading: boolean;
-}
+const Dashboard: React.FC = () => {
+const { devices } = useContext(DeviceContext);
 
-const Dashboard: React.FC<DashboardProps> = ({ devices, loading }) => {
-const theme = useTheme();
-
-// Calcular dispositivos con memoización
 const onlineDevices = useMemo(
 () => devices.filter(device => device.status === 'online'),
 [devices]
 );
 
 const offlineDevices = useMemo(
-() => devices.filter(device => device.status !== 'online'),
+() => devices.filter(device => device.status === 'offline'),
 [devices]
 );
 
-// Datos del gráfico con memoización
 const doughnutData = useMemo(() => ({
 labels: ['En línea', 'Fuera de línea'],
 datasets: [{
     data: [onlineDevices.length, offlineDevices.length],
-    backgroundColor: [
-    theme.palette.success.main,
-    theme.palette.error.main,
-    ],
+    backgroundColor: ['#4caf50', '#f44336'], // Verde para en línea, rojo para fuera de línea
     borderWidth: 0,
 }]
-}), [onlineDevices, offlineDevices, theme]);
-
-if (loading) {
-return (
-    <Grid container spacing={3}>
-    <Grid item xs={12}>
-        <Typography variant="h5" align="center">
-        Actualizando datos...
-        </Typography>
-    </Grid>
-    </Grid>
-);
-}
+}), [onlineDevices, offlineDevices]);
 
 return (
 <Grid container spacing={3}>

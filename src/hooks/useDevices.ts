@@ -20,7 +20,7 @@ try {
     const response = await fetch('http://localhost:3001/api/devices');
     if (!response.ok) throw new Error('Error al cargar los dispositivos');
     const data = await response.json();
-    setDevices(data);
+    setDevices(data.map((device: Device) => ({ ...device, status: 'offline' }))); // Inicializa como offline
 } catch (error) {
     console.error('Error al cargar los dispositivos:', error);
 } finally {
@@ -38,17 +38,15 @@ try {
     });
     if (!response.ok) throw new Error('Error al agregar el dispositivo');
     const data = await response.json();
-    setDevices(prevDevices => [...prevDevices, data]);
+    setDevices(prevDevices => [...prevDevices, { ...data, status: 'offline' }]);
 } catch (error) {
     console.error('Error al agregar el dispositivo:', error);
 }
 };
 
-// Actualización única después de 20 segundos
+// Cargar dispositivos al montar el hook
 useEffect(() => {
-fetchDevices(); // Carga inicial
-const timeout = setTimeout(fetchDevices, 20000); // Actualiza una vez después de 20 segundos
-return () => clearTimeout(timeout); // Limpieza al desmontar
+fetchDevices();
 }, []);
 
 return { devices, loading, addDevice };
