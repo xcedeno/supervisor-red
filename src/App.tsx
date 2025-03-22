@@ -6,11 +6,12 @@ import AddDeviceModal from './components/AddDeviceModal';
 import CardList from './components/CardList';
 import useDevices from './hooks/useDevices';
 import { DeviceProvider } from './context/DeviceProvider';
+import { List, ListItem, ListItemButton, ListItemText } from '@mui/material';
 
 const App: React.FC = () => {
 const { devices, loading, addDevice } = useDevices();
 const [isModalOpen, setIsModalOpen] = useState(false);
-const [selectedTorre] = useState<string | null>(null);
+const [selectedTorre, setSelectedTorre] = useState<string | null>(null);
 
 // Filtrar dispositivos según torre seleccionada
 const filteredDevices = selectedTorre
@@ -18,14 +19,33 @@ const filteredDevices = selectedTorre
   : devices;
 
 // Contenido del drawer
-const drawerContent = (
-  <>
-    {/* ... contenido del drawer ... */}
-  </>
-);
+  // Contenido del drawer
+  const drawerContent = (
+    <>
+      <List>
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => setSelectedTorre(null)}>
+            <ListItemText primary="Ver todas las torres" />
+          </ListItemButton>
+        </ListItem>
+        {Array.from(new Set(devices.map(device => device.torre))).map(torre => (
+          <ListItemButton
+            key={torre}
+            selected={selectedTorre === torre}
+            onClick={() => setSelectedTorre(torre)}
+          >
+            <ListItemText primary={`Torre ${torre}`} />
+          </ListItemButton>
+        ))}
+        <ListItemButton onClick={() => setIsModalOpen(true)}>
+          <ListItemText primary="Agregar Dispositivo" />
+        </ListItemButton>
+      </List>
+    </>
+  );
 
 return (
-  <DeviceProvider>
+    <DeviceProvider>
     <Layout drawerContent={drawerContent}>
       <Dashboard /> {/* Ya no se pasan props */}
       <AddDeviceModal

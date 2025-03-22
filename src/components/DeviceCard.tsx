@@ -1,26 +1,36 @@
+// src/components/DeviceCard.tsx
 import React from 'react';
-import useDevicePing from '../hooks/useDevicePing';
 import { useBandwidthTest } from '../hooks/useBandwidthTest'; // Importa como exportación con nombre
 import './DeviceCard.css'; // Importa el archivo CSS
+
 interface DeviceCardProps {
 device: { id: string; name: string; ip: string };
 }
 
 const DeviceCard: React.FC<DeviceCardProps> = ({ device }) => {
-const status = useDevicePing(device);
-const { bandwidth, loading, error } = useBandwidthTest(device.ip);
+const { bandwidth, loading, error } = useBandwidthTest(device.ip); // Prueba de ancho de banda
+
+// Determinar el estado del dispositivo basado en el ancho de banda
+const isOnline = !error && bandwidth !== null;
 
 return (
-<div className={`device-card ${status ? 'online' : 'offline'}`}>
+<div className={`device-card ${isOnline ? 'online' : 'offline'}`}>
+    {/* Nombre del dispositivo */}
     <h3>{device.name}</h3>
+
+    {/* Dirección IP */}
     <p>{device.ip}</p>
-    <p>{status ? 'Activo' : 'Inactivo'}</p>
+
+    {/* Estado del dispositivo */}
+    <p>{isOnline ? 'Activo' : 'Inactivo'}</p>
+
+    {/* Resultado de la prueba de ancho de banda */}
     <div>
-        {loading && <p>Probando ancho de banda...</p>}
-        {error && <p>Error al medir ancho de banda</p>}
-        {bandwidth !== null && (
-            <p>Ancho de banda: {bandwidth} ms</p>
-        )}
+    {loading && <p className="bandwidth-loading">Probando ancho de banda...</p>}
+    {error && <p className="bandwidth-error">Error al medir ancho de banda</p>}
+    {bandwidth !== null && (
+        <p className="bandwidth-result">Ancho de banda: {bandwidth} ms</p>
+    )}
     </div>
 </div>
 );
