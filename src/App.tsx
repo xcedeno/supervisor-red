@@ -47,7 +47,7 @@ const filteredDevices = selectedTorre
 return (
     <DeviceProvider>
     <Layout drawerContent={drawerContent}>
-      <Dashboard /> {/* Ya no se pasan props */}
+      <Dashboard devices={filteredDevices} loading={loading} /> {/* Ya no se pasan props */}
       <AddDeviceModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

@@ -1,11 +1,16 @@
 // src/hooks/useBandwidthTest.ts
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 
-export const useBandwidthTest = (ip: string) => {
-const [bandwidth, setBandwidth] = useState<number | null>(null); // Tiempo de respuesta en milisegundos
-const [loading, setLoading] = useState<boolean>(true);
-const [error, setError] = useState<boolean>(false);
+interface BandwidthTestResult {
+bandwidth: number | null; // Valor del ancho de banda en ms (o null si no se pudo medir)
+loading: boolean; // Indica si la prueba está en progreso
+error: boolean; // Indica si ocurrió un error durante la prueba
+}
+
+const useBandwidthTest = (ip: string): BandwidthTestResult => {
+const [bandwidth, setBandwidth] = useState<number | null>(null);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState(false);
 
 useEffect(() => {
 const testBandwidth = async () => {
@@ -13,24 +18,34 @@ const testBandwidth = async () => {
     setLoading(true);
     setError(false);
 
-    const startTime = Date.now(); // Tiempo inicial
-    await axios.get(`http://${ip}`, { timeout: 5000 }); // Realiza una solicitud GET a la IP
-    const endTime = Date.now(); // Tiempo final
-    const responseTime = endTime - startTime; // Calcula el tiempo de respuesta
+    // Simular una solicitud HTTP para medir el ancho de banda
+    const startTime = Date.now();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
 
-    setBandwidth(responseTime); // Guarda el tiempo de respuesta
-    setError(false); // No hay error
-    } catch (err) {
-    console.error(`Error al medir ancho de banda para ${ip}:`, err);
-    setError(true); // Marca como error si no se puede conectar
-    setBandwidth(null); // Limpia el ancho de banda
+    const response = await fetch(`http://${ip}/ping`, { method: 'HEAD', signal: controller.signal });
+    clearTimeout(timeoutId);
+    const endTime = Date.now();
+
+    if (!response.ok) {
+        throw new Error('No se pudo medir el ancho de banda');
+    }
+
+    // Calcular el tiempo de respuesta (en milisegundos)
+    const latency = endTime - startTime;
+    setBandwidth(latency);
+    } catch {
+    setError(true);
+    setBandwidth(null);
     } finally {
-    setLoading(false); // Finaliza el estado de carga
+    setLoading(false);
     }
 };
 
 testBandwidth();
-}, [ip]); // Dependencia: se ejecuta cuando cambia la IP
+}, [ip]);
 
 return { bandwidth, loading, error };
 };
+
+export default useBandwidthTest;

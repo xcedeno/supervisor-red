@@ -1,33 +1,96 @@
-// src/components/Dashboard.tsx
-import React, { useContext, useMemo } from 'react';
-import { Grid, Card, CardContent, Typography } from '@mui/material';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Grid, Card, CardContent, Typography, useTheme } from '@mui/material';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import { DeviceContext } from '../context/DeviceContext';
+import { Device, DeviceStatus } from '../types/types';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const Dashboard: React.FC = () => {
-const { devices } = useContext(DeviceContext);
+interface DashboardProps {
+devices: Device[];
+loading: boolean;
+}
 
-const onlineDevices = useMemo(
-() => devices.filter(device => device.status === 'online'),
-[devices]
-);
+const Dashboard: React.FC<DashboardProps> = ({ devices, loading }) => {
+const theme = useTheme();
 
-const offlineDevices = useMemo(
-() => devices.filter(device => device.status === 'offline'),
-[devices]
-);
+// Estado para almacenar los dispositivos con su estado (online/offline)
+const [devicesStatus, setDevicesStatus] = useState<DeviceStatus[]>([]);
 
+// Efecto para calcular el estado de los dispositivos
+useEffect(() => {
+const fetchDeviceStatuses = async () => {
+    const updatedDevices = await Promise.all(
+    devices.map(async (device) => {
+        try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // Timeout de 2 segundos
+        const response = await fetch(`http://${device.ip}/ping`, { method: 'GET', signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            throw new Error('No se pudo medir el ancho de banda');
+        }
+
+        return { ...device, status: 'online' as const };
+        } catch (error) {
+        console.error(`Error al hacer ping a ${device.name} (${device.ip}):`, error);
+        return { ...device, status: 'offline' as const };
+        }
+    })
+    );
+
+    setDevicesStatus(updatedDevices);
+};
+
+fetchDeviceStatuses();
+}, [devices]);
+
+// Filtrar dispositivos en línea y fuera de línea
+const onlineDevices = useMemo(() => {
+return devicesStatus.filter((device) => device.status === 'online');
+}, [devicesStatus]);
+
+const offlineDevices = useMemo(() => {
+return devicesStatus.filter((device) => device.status === 'offline');
+}, [devicesStatus]);
+
+// Datos del gráfico con memoización
 const doughnutData = useMemo(() => ({
 labels: ['En línea', 'Fuera de línea'],
 datasets: [{
     data: [onlineDevices.length, offlineDevices.length],
-    backgroundColor: ['#4caf50', '#f44336'], // Verde para en línea, rojo para fuera de línea
+    backgroundColor: [
+    theme.palette.success.main,
+    theme.palette.error.main,
+    ],
     borderWidth: 0,
 }]
-}), [onlineDevices, offlineDevices]);
+}), [onlineDevices, offlineDevices, theme]);
+
+if (loading) {
+return (
+    <Grid container spacing={3}>
+    <Grid item xs={12}>
+        <Typography variant="h5" align="center">
+        Actualizando datos...
+        </Typography>
+    </Grid>
+    </Grid>
+);
+}
+
+if (!devices.length) {
+return (
+    <Grid container spacing={3}>
+    <Grid item xs={12}>
+        <Typography variant="h5" align="center">
+        No hay dispositivos disponibles.
+        </Typography>
+    </Grid>
+    </Grid>
+);
+}
 
 return (
 <Grid container spacing={3}>
@@ -38,7 +101,7 @@ return (
         <Typography variant="h5" gutterBottom>
             Estado de Dispositivos
         </Typography>
-        <Doughnut 
+        <Doughnut
             data={doughnutData}
             options={{
             responsive: true,

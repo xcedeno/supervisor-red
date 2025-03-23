@@ -4,5 +4,6 @@ export interface Device {
     ip: string;
     torre: string;
     //status: boolean;
-    status?: 'online' | 'offline'; // Agrega esto si usas el campo status
+   // status?: 'online' | 'offline'; // Agrega esto si usas el campo status
 }
+export type DeviceStatus = Device & { status: 'online' | 'offline' };
