@@ -9,13 +9,13 @@
 }
 
 /* Estado en línea */
-.device-card.online {
+.device-card.active {
   background-color: #e8f5e9; /* Verde claro */
   border-color: #4caf50; /* Verde oscuro */
 }
 
 /* Estado fuera de línea */
-.device-card.offline {
+.device-card.inactive {
   background-color: #ffebee; /* Rojo claro */
   border-color: #f44336; /* Rojo oscuro */
 }

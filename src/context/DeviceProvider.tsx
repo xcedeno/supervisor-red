@@ -1,5 +1,5 @@
 // src/context/DeviceProvider.tsx
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { DeviceContext } from './DeviceContext';
 
 interface Device {
@@ -16,15 +16,20 @@ const [devices, setDevices] = useState<Device[]>([]);
 // Función para actualizar el estado de un dispositivo
 const updateDeviceStatus = useCallback((id: string, newStatus: 'online' | 'offline') => {
 console.log(`Actualizando estado del dispositivo ${id}: ${newStatus}`);
-setDevices(prevDevices =>
-    prevDevices.map(device =>
+setDevices((prevDevices) =>
+    prevDevices.map((device) =>
     device.id === id ? { ...device, status: newStatus } : device
     )
 );
 }, []);
 
+// Precalculamos los dispositivos en línea y fuera de línea
+const onlineDevices = useMemo(() => devices.filter((device) => device.status === 'online'), [devices]);
+const offlineDevices = useMemo(() => devices.filter((device) => device.status === 'offline'), [devices]);
+const totalDevices = devices.length;
+
 return (
-<DeviceContext.Provider value={{ devices, updateDeviceStatus }}>
+<DeviceContext.Provider value={{ devices, onlineDevices, offlineDevices, totalDevices, updateDeviceStatus }}>
     {children}
 </DeviceContext.Provider>
 );
