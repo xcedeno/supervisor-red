@@ -232,5 +232,11 @@
     "name": "301 SALA",
     "ip": "192.168.17.7",
     "torre": "CBG"
+  },
+  {
+    "id": "302",
+    "name": "SWITCH PRINCIPAL",
+    "ip": "192.168.16.2",
+    "torre": "PRINCIPAL"
   }
 ]

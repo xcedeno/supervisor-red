@@ -1,5 +1,5 @@
 // src/components/Dashboard.tsx
-import React, { useContext, useMemo } from 'react';
+import React, { useContext } from 'react';
 import { Grid, Card, CardContent, Typography } from '@mui/material';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
@@ -12,19 +12,6 @@ const Dashboard: React.FC = () => {
 
   // Logs para depurar
   console.log('Datos recibidos en Dashboard:', { onlineDevices, offlineDevices, totalDevices });
-
-  // Datos del gráfico con memoización
-  const doughnutData = useMemo(() => ({
-    labels: ['En línea', 'Fuera de línea'],
-    datasets: [{
-      data: [
-        Array.isArray(onlineDevices) ? onlineDevices.length : 0,
-        Array.isArray(offlineDevices) ? offlineDevices.length : 0,
-      ],
-      backgroundColor: ['#4caf50', '#f44336'], // Verde para en línea, rojo para fuera de línea
-      borderWidth: 0,
-    }]
-  }), [onlineDevices, offlineDevices]);
 
   // Validar que los valores no sean undefined
   if (!Array.isArray(onlineDevices) || !Array.isArray(offlineDevices)) {
@@ -54,8 +41,17 @@ const Dashboard: React.FC = () => {
             <Typography variant="h5" gutterBottom>
               Estado de Dispositivos
             </Typography>
-            <Doughnut 
-              data={doughnutData}
+            <Doughnut
+              data={{
+                labels: ['En línea', 'Fuera de línea'],
+                datasets: [
+                  {
+                    data: [onlineDevices.length, offlineDevices.length],
+                    backgroundColor: ['#4caf50', '#f44336'], // Verde para en línea, rojo para fuera de línea
+                    borderWidth: 0,
+                  },
+                ],
+              }}
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
