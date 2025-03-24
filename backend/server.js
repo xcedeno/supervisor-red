@@ -52,6 +52,7 @@ try {
     const response = await fetch(`http://${ip}/`, { timeout: 5000 }); // Timeout de 5 segundos
 
     if (!response.ok) {
+    console.error(`Respuesta no válida del dispositivo (${ip}):`, response.status, response.statusText);
     throw new Error('Error al hacer proxy');
     }
 
@@ -63,7 +64,7 @@ try {
     // Redirigir la respuesta del dispositivo al frontend
     response.body.pipe(res);
 } catch (error) {
-    console.error(`Error al hacer proxy para IP ${ip}:`, error);
+    console.error(`Error al hacer proxy para IP ${ip}:`, error.message || error);
     res.status(500).send('Error interno del servidor');
 }
 });
@@ -73,8 +74,8 @@ app.get('/api/mac/:ip', (req, res) => {
 const { ip } = req.params;
 
 // Validar que la IP pertenezca al segmento 192.168.17.x
-if (!/^192\.168\.17\.\d+$/.test(ip)) {
-return res.status(403).send('IP no permitida');
+if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
+    return res.status(400).send('IP no válida');
 }
 
 // Ejecutar comando ARP para buscar la MAC address

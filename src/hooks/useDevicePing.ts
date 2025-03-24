@@ -5,7 +5,8 @@ import { DeviceContext } from '../context/DeviceContext';
 import { sendTelegramMessage } from '../services/telegram';
 
 const useDevicePing = (device: { id: string; name: string; ip: string }) => {
-const { updateDeviceStatus } = useContext(DeviceContext);
+const deviceContext = useContext(DeviceContext);
+const updateDeviceStatus = deviceContext?.updateDeviceStatus;
 const [status, setStatus] = useState<'online' | 'offline'>('offline');
 const [lastNotificationTime, setLastNotificationTime] = useState<number>(0);
 
@@ -18,8 +19,8 @@ const ping = async () => {
 
     if (newStatus !== status) {
         console.log(`Estado cambiado para ${device.name}: ${status} -> ${newStatus}`);
-        setStatus(newStatus);
-        updateDeviceStatus(device.id, newStatus); // Actualiza el estado global
+        updateDeviceStatus?.(device.id, newStatus); // Actualiza el estado global
+        updateDeviceStatus?.(device.id, newStatus); // Actualiza el estado global
 
         if (newStatus === 'online') {
         sendTelegramMessage(`El equipo ${device.name} (${device.ip}) está en línea.`);
@@ -39,7 +40,7 @@ const ping = async () => {
 
     if (newStatus !== status) {
         setStatus(newStatus);
-        updateDeviceStatus(device.id, newStatus); // Actualiza el estado global
+        updateDeviceStatus?.(device.id, newStatus); // Actualiza el estado global
 
         const currentTime = Date.now();
         const fiveMinutesInMilliseconds = 5 * 60 * 1000;
