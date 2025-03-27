@@ -13,6 +13,35 @@ interface Device {
 export const DeviceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [devices, setDevices] = useState<Device[]>([]);
 
+  // Función para verificar el estado de un dispositivo
+  const checkDeviceStatus = async (device: Device): Promise<Device> => {
+    try {
+      // Validar que la IP sea válida
+      if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(device.ip)) {
+        console.error(`IP no válida: ${device.ip}`);
+        return { ...device, status: 'offline' };
+      }
+
+      // Realizar el ping al dispositivo
+      const response = await axios.get(`http://localhost:3001/api/ping/${device.ip}`, { timeout: 10000 });
+      const { status } = response.data;
+
+      // Validar que el campo "status" tenga un valor válido
+      if (status !== 'online' && status !== 'offline') {
+        console.warn(`Respuesta inesperada del backend para la IP ${device.ip}:`, status);
+        return { ...device, status: 'offline' };
+      }
+
+      return { ...device, status };
+    } catch (error) {
+      console.error(
+        `Error al verificar el estado del dispositivo ${device.name} (${device.ip}):`,
+        axios.isAxiosError(error) ? error.response?.data || error.message : String(error)
+      );
+      return { ...device, status: 'offline' };
+    }
+  };
+
   // Efecto para cargar dispositivos al montar el componente
   useEffect(() => {
     console.log('Iniciando carga de dispositivos...');
@@ -24,27 +53,18 @@ export const DeviceProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (response.status !== 200) throw new Error('Error al cargar los dispositivos');
         const data = response.data;
 
-        // Variable temporal para almacenar los dispositivos procesados
-        const processedDevices: Device[] = [];
+        // Procesar las solicitudes en lotes de 5 dispositivos a la vez
+        const batchSize = 5;
+        const devicesWithStatus: Device[] = [];
 
-        // Procesar cada dispositivo individualmente
-        for (const device of data) {
-          try {
-            // Llamar al endpoint /api/ping/:ip para verificar el estado del dispositivo
-            const pingResponse = await axios.get(`http://localhost:3001/api/ping/${device.ip}`, { timeout: 5000 });
-            const { status } = pingResponse.data;
-
-            // Agregar el dispositivo procesado a la lista temporal
-            processedDevices.push({ ...device, status });
-          } catch (error) {
-            console.error(`Error al verificar el estado del dispositivo ${device.name} (${device.ip}):`, error);
-            // Si hay un error, asumir que el dispositivo está offline
-            processedDevices.push({ ...device, status: 'offline' });
-          }
+        for (let i = 0; i < data.length; i += batchSize) {
+          const batch = data.slice(i, i + batchSize);
+          const batchResults = await Promise.all(batch.map(checkDeviceStatus));
+          devicesWithStatus.push(...batchResults);
         }
 
         // Actualizar el estado con todos los dispositivos procesados
-        setDevices(processedDevices);
+        setDevices(devicesWithStatus);
       } catch (error) {
         console.error('Error al cargar dispositivos:', error);
       }

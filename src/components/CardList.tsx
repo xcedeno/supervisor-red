@@ -1,4 +1,3 @@
-// src/components/CardList.tsx
 import React, { memo } from 'react';
 import DeviceCard from './DeviceCard';
 import { Device } from '../types/types';
@@ -9,6 +8,13 @@ devices: Device[];
 }
 
 const CardList: React.FC<CardListProps> = ({ devices }) => {
+// Validar que los dispositivos estén presentes
+console.log('Dispositivos recibidos en CardList:', devices);
+
+if (!devices || devices.length === 0) {
+return <p>No hay dispositivos disponibles.</p>;
+}
+
 // Conteo de dispositivos en línea, fuera de línea y total
 const onlineCount = devices.filter((device) => device.status === 'online').length;
 const offlineCount = devices.filter((device) => device.status === 'offline').length;

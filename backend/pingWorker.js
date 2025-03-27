@@ -1,21 +1,19 @@
-// Importar módulos usando import en lugar de require
-import { parentPort } from 'worker_threads';
-import ping from 'ping';
+// Archivo: pingWorker.js
+const { parentPort } = require('worker_threads');
+const ping = require('ping');
 
-// Realizar el ping ICMP
-const performPing = async (ip) => {
-try {
-console.log(`Realizando ping ICMP a la IP: ${ip}`);
-const result = await ping.promise.probe(ip, { timeout: 3 }); // Timeout de 3 segundos
-const status = result.alive ? 'online' : 'offline';
-parentPort.postMessage({ ip, status });
-} catch (error) {
-console.error(`Error al hacer ping ICMP a la IP ${ip}:`, error.message || error);
-parentPort.postMessage({ ip, status: 'offline' });
-}
-};
+parentPort.on('message', async (ip) => {
+  try {
+    // Realizar el ping al dispositivo
+    const result = await ping.promise.probe(ip, {
+      timeout: 5,
+      extra: ['-i', '2'], // Opciones adicionales para el ping
+    });
 
-// Escuchar mensajes del hilo principal
-parentPort.on('message', (ip) => {
-performPing(ip);
+    // Enviar el resultado al hilo principal
+    parentPort.postMessage({ ip, status: result.alive ? 'online' : 'offline' });
+  } catch (error) {
+    // Enviar un mensaje de error al hilo principal
+    parentPort.postMessage({ ip, status: 'offline', error: error.message });
+  }
 });

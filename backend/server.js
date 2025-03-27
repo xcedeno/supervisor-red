@@ -1,9 +1,10 @@
+// Archivo: server.js
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import ping from 'ping'; // Usamos el módulo `ping` para realizar mediciones ICMP
+import { Worker } from 'worker_threads';
 
 // Configuración de __dirname para módulos ES
 const __filename = fileURLToPath(import.meta.url);
@@ -11,114 +12,90 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(express.json());
-
-// Configuración de CORS para permitir solicitudes desde cualquier origen
-app.use(cors({
-origin: '*', // Permite solicitudes desde cualquier origen
-methods: ['GET', 'POST'], // Métodos HTTP permitidos
-allowedHeaders: ['Content-Type'], // Encabezados permitidos
-}));
+app.use(cors());
 
 // Ruta para obtener todos los dispositivos
-const filePath = path.join(__dirname, 'public', 'devices.json'); // Archivo JSON con los datos
+const filePath = path.join(__dirname, 'public', 'devices.json');
 
 app.get('/api/devices', (req, res) => {
-try {
-console.log('Solicitud GET recibida en /api/devices');
-if (fs.existsSync(filePath)) {
-    console.log('Archivo devices.json encontrado:', filePath);
-    const readStream = fs.createReadStream(filePath, { encoding: 'utf-8' });
-    readStream.pipe(res);
-} else {
-    console.log('Archivo devices.json no encontrado. Creando uno nuevo...');
-    const data = [];
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-    res.json(data); // Devuelve los dispositivos como JSON
-}
-} catch (error) {
-console.error('Error al leer devices.json:', error);
-res.status(500).send('Error interno del servidor');
-}
+  try {
+    if (fs.existsSync(filePath)) {
+      const readStream = fs.createReadStream(filePath, { encoding: 'utf-8' });
+      readStream.pipe(res);
+    } else {
+      const data = [];
+      fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+      res.json(data);
+    }
+  } catch (error) {
+    console.error('Error al leer devices.json:', error);
+    res.status(500).send('Error interno del servidor');
+  }
 });
 
-// Cache temporal para almacenar estados de dispositivos
-const deviceCache = new Map();
+// Pool de workers limitado
+const MAX_WORKERS = 5;
+const workerPool = [];
 
-// Función para limpiar la caché después de un tiempo
-const clearCacheAfter = (ip, ttl = 10000) => {
-setTimeout(() => {
-deviceCache.delete(ip);
-console.log(`Cache eliminada para la IP: ${ip}`);
-}, ttl);
-};
+for (let i = 0; i < MAX_WORKERS; i++) {
+  const worker = new Worker(path.join(__dirname, 'pingWorker.js'));
+  worker.busy = false;
 
-// Ruta para verificar el estado de un dispositivo mediante ICMP ping
+  worker.on('message', (response) => {
+    worker.busy = false;
+    console.log(`Worker libre después de procesar IP: ${response.ip}`);
+  });
+
+  worker.on('error', (error) => {
+    worker.busy = false;
+    console.error(`Error en worker:`, error.message || error);
+  });
+
+  worker.on('exit', (code) => {
+    if (code !== 0) {
+      console.error(`Worker terminó con código de salida ${code}`);
+    }
+  });
+
+  workerPool.push(worker);
+}
+
+// Ruta para verificar el estado de un dispositivo mediante ICMP ping usando workers
 app.get('/api/ping/:ip', async (req, res) => {
-const { ip } = req.params;
+  const { ip } = req.params;
 
-// Validar que la IP sea válida
-if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
-return res.status(400).send('IP no válida');
-}
+  // Validar que la IP sea válida
+  if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
+    return res.status(400).send('IP no válida');
+  }
 
-// Verificar si el estado está en caché
-if (deviceCache.has(ip)) {
-    console.log(`Estado de la IP ${ip} obtenido desde la caché`);
-    return res.json(deviceCache.get(ip));
-}
-try {
-console.log(`Realizando ping ICMP a la IP: ${ip}`);
-const result = await ping.promise.probe(ip, { timeout: 3 }); // Timeout de 5 segundos
+  // Encontrar un worker disponible
+  const worker = workerPool.find((w) => !w.busy);
+  if (!worker) {
+    return res.status(503).send('Servidor ocupado, inténtelo más tarde');
+  }
 
-const status = result.alive ? 'online' : 'offline';
-const response = { ip, status };
+  worker.busy = true;
+  worker.postMessage(ip);
 
-// Almacenar en caché
-deviceCache.set(ip, response);
-clearCacheAfter(ip); // Eliminar de la caché después de 10 segundos
+  const timeout = setTimeout(() => {
+    worker.busy = false;
+    console.error(`Timeout para la solicitud de ping a la IP: ${ip}`);
+    res.status(504).send('Timeout al procesar la solicitud');
+  }, 10000); // Timeout de 10 segundos
 
-res.json(response);
-} catch (error) {
-console.error(`Error al hacer ping ICMP a la IP ${ip}:`, error.message || error);
-res.status(500).send('Error interno del servidor');
-}
-});
+  worker.once('message', (response) => {
+    clearTimeout(timeout); // Limpiar el timeout si se recibe una respuesta
+    console.log(`Ping realizado para la IP ${ip}:`, response);
+    res.json(response); // Enviar la respuesta al cliente
+  });
 
-// Función para verificar el estado de un dispositivo usando ICMP ping
-const checkDeviceStatus = async (deviceIp) => {
-try {
-console.log(`Realizando ping ICMP al dispositivo ${deviceIp}`);
-const result = await ping.promise.probe(deviceIp, { timeout: 5 }); // Timeout de 5 segundos
-
-if (result.alive) {
-    console.log(`Dispositivo ${deviceIp} está en línea`);
-    return { status: 'online' };
-} else {
-    console.log(`Dispositivo ${deviceIp} está fuera de línea`);
-    return { status: 'offline' };
-}
-} catch (error) {
-console.error(`Error al verificar el estado del dispositivo ${deviceIp}:`, error);
-return { status: 'offline' };
-}
-};
-
-// Ejemplo de uso de checkDeviceStatus en una ruta
-app.get('/api/check-status/:ip', async (req, res) => {
-const { ip } = req.params;
-
-// Validar que la IP sea válida
-if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
-return res.status(400).send('IP no válida');
-}
-
-try {
-const status = await checkDeviceStatus(ip);
-res.json({ ip, status: status.status });
-} catch (error) {
-console.error(`Error al verificar el estado del dispositivo ${ip}:`, error);
-res.status(500).send('Error interno del servidor');
-}
+  worker.once('error', (error) => {
+    clearTimeout(timeout); // Limpiar el timeout si ocurre un error
+    worker.busy = false;
+    console.error(`Error en worker para IP ${ip}:`, error.message || error);
+    res.status(500).send('Error interno del servidor');
+  });
 });
 
 // Iniciar el servidor
