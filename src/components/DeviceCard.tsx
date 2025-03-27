@@ -1,17 +1,13 @@
-// src/components/DeviceCard.tsx
 import React from 'react';
-import { useBandwidthTest } from '../hooks/useBandwidthTest'; // Importa como exportación con nombre
 import './DeviceCard.css'; // Importa el archivo CSS
 
 interface DeviceCardProps {
-  device: { id: string; name: string; ip: string };
+  device: { id: string; name: string; ip: string; status?: 'online' | 'offline' }; // Agrega el campo `status`
 }
 
 const DeviceCard: React.FC<DeviceCardProps> = ({ device }) => {
-  const { bandwidth, loading, error } = useBandwidthTest(device.ip); // Prueba de ancho de banda
-
-  // Determinar el estado del dispositivo basado en el ancho de banda
-  const isActive = !error && bandwidth !== null;
+  // Determinar si el dispositivo está activo basado en su estado (`online` o `offline`)
+  const isActive = device.status === 'online';
 
   return (
     <div className={`device-card ${isActive ? 'active' : 'inactive'}`}>
@@ -23,7 +19,7 @@ const DeviceCard: React.FC<DeviceCardProps> = ({ device }) => {
 
       {/* Estado del dispositivo */}
       <p className="device-status">
-        {loading ? (
+        {device.status === undefined ? (
           <span className="status-loading">Cargando...</span>
         ) : isActive ? (
           <span className="status-active">Activo</span>
@@ -32,13 +28,11 @@ const DeviceCard: React.FC<DeviceCardProps> = ({ device }) => {
         )}
       </p>
 
-      {/* Resultado de la prueba de ancho de banda */}
-      <div className="bandwidth-info">
-        {loading && <p className="bandwidth-loading">Probando ancho de banda...</p>}
-        {error && <p className="bandwidth-error">Error al medir ancho de banda</p>}
-        {bandwidth !== null && (
-          <p className="bandwidth-result">Tiempo de respuesta: {bandwidth} ms</p>
-        )}
+      {/* Información adicional (opcional) */}
+      <div className="ping-info">
+        {device.status === undefined && <p className="ping-loading">Realizando ping...</p>}
+        {device.status === 'online' && <p className="ping-success">Dispositivo en línea</p>}
+        {device.status === 'offline' && <p className="ping-error">Dispositivo fuera de línea</p>}
       </div>
     </div>
   );

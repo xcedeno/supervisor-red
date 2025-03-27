@@ -1,4 +1,3 @@
-// src/components/Dashboard.tsx
 import React, { useContext } from 'react';
 import { Grid, Card, CardContent, Typography } from '@mui/material';
 import { Doughnut } from 'react-chartjs-2';
@@ -8,14 +7,14 @@ import { DeviceContext } from '../context/DeviceContext';
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const Dashboard: React.FC = () => {
-  const { onlineDevices, offlineDevices, totalDevices } = useContext(DeviceContext);
+  const { devices, onlineDevices, offlineDevices, totalDevices } = useContext(DeviceContext);
 
   // Logs para depurar
-  console.log('Datos recibidos en Dashboard:', { onlineDevices, offlineDevices, totalDevices });
+  console.log('Datos recibidos en Dashboard:', { devices, onlineDevices, offlineDevices, totalDevices });
 
   // Validar que los valores no sean undefined
-  if (!Array.isArray(onlineDevices) || !Array.isArray(offlineDevices)) {
-    console.error('Error: onlineDevices o offlineDevices no son arrays válidos.');
+  if (!Array.isArray(devices)) {
+    console.error('Error: devices no es un array válido.');
     return (
       <Typography variant="h5" align="center">
         Error al cargar datos de dispositivos.

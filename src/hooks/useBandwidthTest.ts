@@ -14,12 +14,20 @@ export const useBandwidthTest = (ip: string) => {
         setError(false);
 
         const startTime = Date.now(); // Tiempo inicial
-        await axios.get(`http://${ip}`, { timeout: 5000 }); // Realiza una solicitud GET a la IP
+        // Llama al endpoint /api/ping/:ip para verificar el estado del dispositivo
+        const response = await axios.get(`http://localhost:3001/api/ping/${ip}`, { timeout: 80000 });
         const endTime = Date.now(); // Tiempo final
-        const responseTime = endTime - startTime; // Calcula el tiempo de respuesta
 
-        setBandwidth(responseTime); // Guarda el tiempo de respuesta
-        setError(false); // No hay error
+        const { status } = response.data; // Obtiene el estado del dispositivo (online/offline)
+
+        if (status === 'online') {
+          const responseTime = endTime - startTime; // Calcula el tiempo de respuesta
+          setBandwidth(responseTime); // Guarda el tiempo de respuesta
+          setError(false); // No hay error
+        } else {
+          setError(true); // Marca como error si el dispositivo está offline
+          setBandwidth(null); // Limpia el ancho de banda
+        }
       } catch (err) {
         console.error(`Error al medir ancho de banda para ${ip}:`, err);
         setError(true); // Marca como error si no se puede conectar
@@ -29,7 +37,12 @@ export const useBandwidthTest = (ip: string) => {
       }
     };
 
-    testBandwidth();
+    if (ip) {
+      testBandwidth();
+    } else {
+      setLoading(false); // Si no hay IP, finaliza el estado de carga
+      setError(false); // No hay error si no hay IP
+    }
   }, [ip]); // Dependencia: se ejecuta cuando cambia la IP
 
   return { bandwidth, loading, error };

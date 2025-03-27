@@ -3,8 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import fetch from 'node-fetch';
-import { exec } from 'child_process'; // Agregado para ejecutar
+import ping from 'ping'; // Usamos el módulo `ping` para realizar mediciones ICMP
 
 // Configuración de __dirname para módulos ES
 const __filename = fileURLToPath(import.meta.url);
@@ -42,68 +41,61 @@ res.status(500).send('Error interno del servidor');
 }
 });
 
-// Proxy dinámico para IPs en cualquier segmento
-// Proxy dinámico para IPs en cualquier segmento
-app.get('/proxy/:ip', async (req, res) => {
+// Cache temporal para almacenar estados de dispositivos
+const deviceCache = new Map();
+
+// Función para limpiar la caché después de un tiempo
+const clearCacheAfter = (ip, ttl = 10000) => {
+setTimeout(() => {
+deviceCache.delete(ip);
+console.log(`Cache eliminada para la IP: ${ip}`);
+}, ttl);
+};
+
+// Ruta para verificar el estado de un dispositivo mediante ICMP ping
+app.get('/api/ping/:ip', async (req, res) => {
 const { ip } = req.params;
 
-try {
-    console.log(`Realizando solicitud al proxy para IP: ${ip}`);
-    const response = await fetch(`http://${ip}/`, { timeout: 5000 }); // Timeout de 5 segundos
-
-    if (!response.ok) {
-    console.error(`Respuesta no válida del dispositivo (${ip}):`, response.status, response.statusText);
-    throw new Error('Error al hacer proxy');
-    }
-
-    // Agregar encabezados CORS manualmente
-    res.setHeader('Access-Control-Allow-Origin', '*'); // Permite cualquier origen
-    res.setHeader('Access-Control-Allow-Methods', 'GET'); // Métodos permitidos
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type'); // Encabezados permitidos
-
-    // Redirigir la respuesta del dispositivo al frontend
-    response.body.pipe(res);
-} catch (error) {
-    console.error(`Error al hacer proxy para IP ${ip}:`, error.message || error);
-    res.status(500).send('Error interno del servidor');
-}
-});
-
-// Nueva ruta para obtener la MAC address de una IP
-app.get('/api/mac/:ip', (req, res) => {
-const { ip } = req.params;
-
-// Validar que la IP pertenezca al segmento 192.168.17.x
+// Validar que la IP sea válida
 if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
-    return res.status(400).send('IP no válida');
+return res.status(400).send('IP no válida');
 }
 
-// Ejecutar comando ARP para buscar la MAC address
-exec(`arp -a ${ip}`, (error, stdout, stderr) => {
-if (error) {
-console.error('Error al ejecutar ARP:', error);
-return res.status(500).send('Error al obtener la MAC address');
+// Verificar si el estado está en caché
+if (deviceCache.has(ip)) {
+    console.log(`Estado de la IP ${ip} obtenido desde la caché`);
+    return res.json(deviceCache.get(ip));
 }
+try {
+console.log(`Realizando ping ICMP a la IP: ${ip}`);
+const result = await ping.promise.probe(ip, { timeout: 3 }); // Timeout de 5 segundos
 
-// Extraer la MAC address del resultado
-const macMatch = stdout.match(/([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})/);
-if (macMatch) {
-res.json({ ip, mac: macMatch[0] });
-} else {
-res.status(404).send('MAC address no encontrada');
+const status = result.alive ? 'online' : 'offline';
+const response = { ip, status };
+
+// Almacenar en caché
+deviceCache.set(ip, response);
+clearCacheAfter(ip); // Eliminar de la caché después de 10 segundos
+
+res.json(response);
+} catch (error) {
+console.error(`Error al hacer ping ICMP a la IP ${ip}:`, error.message || error);
+res.status(500).send('Error interno del servidor');
 }
 });
-});
+
+// Función para verificar el estado de un dispositivo usando ICMP ping
 const checkDeviceStatus = async (deviceIp) => {
 try {
-const response = await fetch(`http://localhost:3001/proxy/${deviceIp}`, { method: 'GET' });
+console.log(`Realizando ping ICMP al dispositivo ${deviceIp}`);
+const result = await ping.promise.probe(deviceIp, { timeout: 5 }); // Timeout de 5 segundos
 
-if (response.ok) {
-console.log(`Dispositivo ${deviceIp} está en línea`);
-return { status: 'online' };
+if (result.alive) {
+    console.log(`Dispositivo ${deviceIp} está en línea`);
+    return { status: 'online' };
 } else {
-console.log(`Dispositivo ${deviceIp} está fuera de línea`);
-return { status: 'offline' };
+    console.log(`Dispositivo ${deviceIp} está fuera de línea`);
+    return { status: 'offline' };
 }
 } catch (error) {
 console.error(`Error al verificar el estado del dispositivo ${deviceIp}:`, error);
@@ -111,4 +103,23 @@ return { status: 'offline' };
 }
 };
 
+// Ejemplo de uso de checkDeviceStatus en una ruta
+app.get('/api/check-status/:ip', async (req, res) => {
+const { ip } = req.params;
+
+// Validar que la IP sea válida
+if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
+return res.status(400).send('IP no válida');
+}
+
+try {
+const status = await checkDeviceStatus(ip);
+res.json({ ip, status: status.status });
+} catch (error) {
+console.error(`Error al verificar el estado del dispositivo ${ip}:`, error);
+res.status(500).send('Error interno del servidor');
+}
+});
+
+// Iniciar el servidor
 app.listen(3001, () => console.log('Servidor corriendo en http://localhost:3001'));

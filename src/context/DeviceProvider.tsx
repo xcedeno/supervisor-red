@@ -1,4 +1,3 @@
-// src/context/DeviceProvider.tsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { DeviceContext } from './DeviceContext';
@@ -20,24 +19,32 @@ export const DeviceProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const fetchDevices = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/devices');
-        if (!response.ok) throw new Error('Error al cargar los dispositivos');
-        const data = await response.json();
+        // Obtener la lista de dispositivos desde el backend
+        const response = await axios.get('http://localhost:3001/api/devices', { timeout: 15000 });
+        if (response.status !== 200) throw new Error('Error al cargar los dispositivos');
+        const data = response.data;
 
-        // Determinar el estado de cada dispositivo
-        const devicesWithStatus = await Promise.all(
-          data.map(async (device: Device) => {
-            try {
-              await axios.get(`http://${device.ip}`, { timeout: 5000 }); // Realiza una solicitud GET a la IP
-              return { ...device, status: 'online' }; // Actualiza el estado a "online"
-            } catch {
-              console.error(`Dispositivo ${device.name} (${device.ip}) está fuera de línea`);
-              return { ...device, status: 'offline' }; // Actualiza el estado a "offline"
-            }
-          })
-        );
+        // Variable temporal para almacenar los dispositivos procesados
+        const processedDevices: Device[] = [];
 
-        setDevices(devicesWithStatus); // Inicializa con estados actualizados
+        // Procesar cada dispositivo individualmente
+        for (const device of data) {
+          try {
+            // Llamar al endpoint /api/ping/:ip para verificar el estado del dispositivo
+            const pingResponse = await axios.get(`http://localhost:3001/api/ping/${device.ip}`, { timeout: 5000 });
+            const { status } = pingResponse.data;
+
+            // Agregar el dispositivo procesado a la lista temporal
+            processedDevices.push({ ...device, status });
+          } catch (error) {
+            console.error(`Error al verificar el estado del dispositivo ${device.name} (${device.ip}):`, error);
+            // Si hay un error, asumir que el dispositivo está offline
+            processedDevices.push({ ...device, status: 'offline' });
+          }
+        }
+
+        // Actualizar el estado con todos los dispositivos procesados
+        setDevices(processedDevices);
       } catch (error) {
         console.error('Error al cargar dispositivos:', error);
       }

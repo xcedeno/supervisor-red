@@ -2,21 +2,26 @@
 import React, { useState } from 'react';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
-import AddDeviceModal from './components/AddDeviceModal';
+
 import CardList from './components/CardList';
 import useDevices from './hooks/useDevices';
 import { DeviceProvider } from './context/DeviceProvider';
 import { List, ListItem, ListItemButton, ListItemText } from '@mui/material';
 
 const App: React.FC = () => {
-const { devices, loading, addDevice } = useDevices();
-const [isModalOpen, setIsModalOpen] = useState(false);
+const { devices, loading } = useDevices();
+// Removed unused isModalOpen state
 const [selectedTorre, setSelectedTorre] = useState<string | null>(null);
 
 // Filtrar dispositivos según torre seleccionada
 const filteredDevices = selectedTorre
   ? devices.filter(device => device.torre === selectedTorre)
   : devices;
+
+// Validar que filteredDevices sea un array
+if (!Array.isArray(filteredDevices)) {
+  console.error('filteredDevices no es un array:', filteredDevices);
+}
 
 // Contenido del drawer
   // Contenido del drawer
@@ -37,7 +42,7 @@ const filteredDevices = selectedTorre
             <ListItemText primary={`Torre ${torre}`} />
           </ListItemButton>
         ))}
-        <ListItemButton onClick={() => setIsModalOpen(true)}>
+        <ListItemButton>
           <ListItemText primary="Agregar Dispositivo" />
         </ListItemButton>
       </List>
@@ -48,11 +53,7 @@ return (
     <DeviceProvider>
     <Layout drawerContent={drawerContent}>
       <Dashboard /> {/* Ya no se pasan props */}
-      <AddDeviceModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAddDevice={addDevice}
-      />
+      
       {loading ? (
         <p className="text-center text-gray-600">Cargando dispositivos...</p>
       ) : filteredDevices.length > 0 ? (

@@ -12,15 +12,21 @@
     "torre": "MGTA"
   },
   {
+    "id": "103",
+    "name": "Habitación 103",
+    "ip": "192.168.18.59",
+    "torre": "MGTA"
+  },
+  {
     "id": "104",
     "name": "Habitación 104",
-    "ip": "192.168.18.249",
+    "ip": "192.168.18.34",
     "torre": "MGTA"
   },
   {
     "id": "105",
     "name": "Habitación 105",
-    "ip": "192.168.18.143",
+    "ip": "192.168.18.40",
     "torre": "MGTA"
   },
   {
@@ -50,7 +56,7 @@
   {
     "id": "111",
     "name": "Habitación 111",
-    "ip": "192.168.18.86",
+    "ip": "192.168.18.204",
     "torre": "MGTA"
   },
   {
@@ -84,11 +90,23 @@
     "torre": "COCHE"
   },
   {
+    "id": "120",
+    "name": "Habitación 120",
+    "ip": "192.168.18.61",
+    "torre": "COCHE"
+  },{
+  "id": "121",
+  "name": "Habitación 121",
+  "ip": "192.168.18.47",
+  "torre": "COCHE"
+},
+  {
     "id": "122",
     "name": "Habitación 122",
     "ip": "192.168.18.29",
     "torre": "COCHE"
   },
+
   {
     "id": "123",
     "name": "Habitación 123",
@@ -116,13 +134,13 @@
   {
     "id": "203",
     "name": "Habitación 203",
-    "ip": "192.168.18.9",
+    "ip": "192.168.18.12",
     "torre": "MGTA"
   },
   {
     "id": "204",
     "name": "Habitación 204",
-    "ip": "192.168.18.28",
+    "ip": "192.168.18.69",
     "torre": "MGTA"
   },
   {
@@ -158,7 +176,7 @@
   {
     "id": "211",
     "name": "Habitación 211",
-    "ip": "192.168.18.252",
+    "ip": "192.168.18.128",
     "torre": "MGTA"
   },
   {
@@ -170,7 +188,7 @@
   {
     "id": "214",
     "name": "Habitación 214",
-    "ip": "192.168.18.16",
+    "ip": "192.168.18.119",
     "torre": "MGTA"
   },
   {
@@ -237,6 +255,12 @@
     "id": "302",
     "name": "SWITCH PRINCIPAL",
     "ip": "192.168.16.2",
+    "torre": "PRINCIPAL"
+  },
+  {
+    "id": "303",
+    "name": "OMADA MARGARITA",
+    "ip": "192.168.18.103",
     "torre": "PRINCIPAL"
   }
 ]
